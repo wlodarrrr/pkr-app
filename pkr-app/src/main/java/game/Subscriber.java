@@ -32,8 +32,8 @@ public interface Subscriber {
 		Game.getInstance().sit(this, seat, buyin);
 	}
 	
-	default void setAway(boolean away) {
-		Game.getInstance().setAway(this, away);
+	default boolean setAway(boolean away) {
+		return Game.getInstance().setAway(this, away);
 	}
 
 	default void stand() {

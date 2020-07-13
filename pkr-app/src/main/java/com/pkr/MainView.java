@@ -11,10 +11,7 @@ import com.vaadin.flow.server.PWA;
 @Route
 @Push
 @PageTitle("Poker")
-@PWA(name = "Poker app",
-        shortName = "pkr-app",
-        description = "Poker app.",
-        enableInstallPrompt = true)
+@PWA(name = "Poker app", shortName = "pkr-app", description = "Poker app.", enableInstallPrompt = true)
 @CssImport("./styles/shared-styles.css")
 @CssImport(value = "./styles/vaadin-text-field-styles.css", themeFor = "vaadin-text-field")
 public class MainView extends HorizontalLayout {
@@ -42,9 +39,9 @@ public class MainView extends HorizontalLayout {
 		return name;
 	}
 
-	public void login(String name) {
+	public void login(String name, String pass) {
 		this.name = name;
-		loginView.login();
+		loginView.login(true);
 
 		chatView.setVisible(true);
 		chatView.register();
@@ -55,7 +52,7 @@ public class MainView extends HorizontalLayout {
 	}
 
 	public void logout() {
-		loginView.logout();
+		loginView.login(false);
 
 		chatView.deregister();
 		chatView.setVisible(false);

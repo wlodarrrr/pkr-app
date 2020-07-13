@@ -44,17 +44,18 @@ public class TableView extends AbsoluteLayout implements Subscriber {
 
 		tfBuyIn = new TextField("BuyIn");
 		cbAway = new Checkbox("Away", false);
+		cbAway.setVisible(false);
 		cbAway.addValueChangeListener(e -> {
 			setAway(e.getValue());
 		});
 		bStandUp = new Button("Stand up");
-		bStandUp.setEnabled(false);
+		bStandUp.setVisible(false);
 		bStandUp.addClickListener(e -> {
 			stand();
 		});
 		final VerticalLayout vl = new VerticalLayout(tfBuyIn, cbAway, bStandUp);
 		vl.setWidth("200px");
-		vl.setHeight("225px");
+		vl.setHeight("100px");
 		vl.addClassNames("box");
 		add(vl, 0, 0);
 
@@ -115,7 +116,7 @@ public class TableView extends AbsoluteLayout implements Subscriber {
 			if (index == seat) {
 				actions.setVisible(true);
 				System.out.println(toCall + " " + pot);
-				actions.update(toCall, pot);
+				actions.update(toCall, pot, player.getCash());
 			} else {
 				actions.setVisible(false);
 			}
@@ -171,9 +172,10 @@ public class TableView extends AbsoluteLayout implements Subscriber {
 
 			if (player.getName().contentEquals(mv.getName())) {
 				this.seat = seat;
-				tfBuyIn.setReadOnly(true);
-				tfBuyIn.setValue("");
-				bStandUp.setEnabled(true);
+				tfBuyIn.setVisible(false);
+				cbAway.setVisible(true);
+				cbAway.setValue(player.isAway());
+				bStandUp.setVisible(true);
 			}
 
 		});
@@ -209,8 +211,10 @@ public class TableView extends AbsoluteLayout implements Subscriber {
 			seats[seat].setClickable(true);
 
 			if (player.getName().contentEquals(mv.getName())) {
-				tfBuyIn.setReadOnly(false);
-				bStandUp.setEnabled(false);
+				tfBuyIn.setVisible(true);
+				tfBuyIn.setValue("");
+				cbAway.setVisible(false);
+				bStandUp.setVisible(false);
 			}
 		});
 	}
@@ -227,6 +231,7 @@ public class TableView extends AbsoluteLayout implements Subscriber {
 				seats[seat].setChips(player.getCash());
 				seats[seat].setAway(player.isAway());
 				seats[seat].setClickable(false);
+				seats[seat].setActive(false);
 				bets[seat].update(player.getWin());
 
 				Card[] cards = player.getCards();
@@ -237,6 +242,9 @@ public class TableView extends AbsoluteLayout implements Subscriber {
 				} else {
 					seats[seat].setCards(null);
 				}
+			}
+			for (int i = 0; i < size; i++) {
+				seats[i].setActive(false);
 			}
 		});
 	}

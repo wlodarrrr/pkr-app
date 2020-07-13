@@ -106,18 +106,6 @@ public class Game {
 		}
 	}
 
-	private int indexOf(Subscriber subscriber) {
-		if (subscriber == null) {
-			return -1;
-		}
-		for (int i = 0; i < size; i++) {
-			if (subscriber.equals(sittingSubs[i])) {
-				return i;
-			}
-		}
-		return -1;
-	}
-
 	private int indexOf(String name) {
 		for (int i = 0; i < size; i++) {
 			if (players.get(i) != null) {
@@ -130,14 +118,6 @@ public class Game {
 	}
 
 	private void endRound() {
-		round++;
-
-		// check if it was last round
-		if (round == 4) {
-			endHand();
-			return;
-		}
-
 		// reset
 		actor = actors.reset();
 		bet = 0;
@@ -148,6 +128,14 @@ public class Game {
 			endHand();
 			return;
 		}
+
+		// check if it was last round
+		round++;
+		if (round == 4) {
+			endHand();
+			return;
+		}
+
 		for (Subscriber s : subscribers) {
 			fullRefresh(s);
 		}
@@ -209,6 +197,12 @@ public class Game {
 			public void run() {
 				running = false;
 				tryStart();
+				if (!running) {
+					for (Subscriber s : subscribers) {
+						fullRefresh(s);
+					}
+
+				}
 
 			}
 
@@ -227,12 +221,16 @@ public class Game {
 			subscriber.updatePot(totalPot());
 			subscriber.updateDealer(dealerPosition);
 
-			int i = indexOf(subscriber);
+			int i = indexOf(subscriber.getName());
 			if (i != -1) {
 				subscriber.updateHoleCards(players.get(i).getCards());
 			}
 
 			subscriber.toAct(actor.publicClone(false), bet - actor.getBet(), totalPot());
+		} else {
+			subscriber.updateBoard(null);
+			subscriber.updatePot(0);
+			subscriber.updateHoleCards(null);
 		}
 	}
 
@@ -245,7 +243,7 @@ public class Game {
 	}
 
 	void act(Subscriber subscriber, Action action, double amount) {
-		int index = indexOf(subscriber);
+		int index = indexOf(subscriber.getName());
 		if (index == -1) {
 			System.out.println("Subscriber is not sitting.");
 			return;
@@ -255,11 +253,17 @@ public class Game {
 			return;
 		}
 
+		// round to all in if amount is close or bigger
+		if (player.getCash() - amount < 0.01) {
+			amount = player.getCash();
+		}
+
 		double payment = bet - player.getBet();
 		switch (action) {
 		case FOLD:
 			player.resetBet();
 			player.setCards(null);
+			BankServer.updateBuyin(player.getName(), player.getCash());
 
 			actors.remove(player);
 			playersLeft--;
@@ -300,7 +304,7 @@ public class Game {
 
 		if (playersLeft < 1) {
 			endRound();
-		} else if (round == 0 && bet == blind && players.countPlayersWithCards() == 1) {
+		} else if (action == Action.FOLD && players.countPlayersWithCards() == 1) {
 			endRound();
 		} else {
 
@@ -315,18 +319,26 @@ public class Game {
 
 	void join(Subscriber subscriber) {
 		int index = indexOf(subscriber.getName());
+
 		if (index != -1) {
+
+			// handle case where player is already created for this subscriber
 			if (sittingSubs[index] != null) {
+				subscribers.remove(sittingSubs[index]);
 				sittingSubs[index].logout();
 			}
 			sittingSubs[index] = subscriber;
+		} else {
+
+			// handle case where subscriber is not really in game, but has buyin
+			BankServer.buyout(subscriber.getName());
 		}
 		subscribers.add(subscriber);
 		fullRefresh(subscriber);
 	}
 
 	void sit(Subscriber subscriber, int seat, double buyin) {
-		int index = indexOf(subscriber);
+		int index = indexOf(subscriber.getName());
 		if (index != -1) {
 			System.out.println("Player is already sitting.");
 			return;
@@ -336,10 +348,10 @@ public class Game {
 			return;
 		}
 
-		Player p = new Player(subscriber.getName(), buyin, seat);
-		BankServer.increase(subscriber.getName(), -buyin);
-		Player clone = p.publicClone(false);
+		Player p = new Player(subscriber.getName(), buyin);
+		BankServer.buyin(subscriber.getName(), buyin);
 		players.add(p, seat);
+		Player clone = p.publicClone(false);
 		sittingSubs[seat] = subscriber;
 		for (Subscriber s : subscribers) {
 			s.updatePlayer(clone);
@@ -349,7 +361,7 @@ public class Game {
 	}
 
 	void stand(Subscriber subscriber) {
-		int index = indexOf(subscriber);
+		int index = indexOf(subscriber.getName());
 		if (index == -1) {
 			System.out.println("Subscriber is not sitting.");
 			return;
@@ -361,24 +373,35 @@ public class Game {
 			return;
 		}
 
-		players.remove(player);
 		sittingSubs[index] = null;
-		BankServer.increase(player.getName(), player.getCash());
+		BankServer.buyout(player.getName());
+		Player clone = player.publicClone(false);
 		for (Subscriber s : subscribers) {
-			s.removePlayer(player);
+			s.removePlayer(clone);
 		}
+		players.remove(player);
 
 	}
 
-	void setAway(Subscriber subscriber, boolean away) {
-		int index = indexOf(subscriber);
+	boolean setAway(Subscriber subscriber, boolean away) {
+		int index = indexOf(subscriber.getName());
 		if (index != -1) {
 			Player player = players.get(index);
 			player.setAway(away);
+			Player clone = player.publicClone(false);
+			if (!player.hasCards()) {
+				for (Subscriber s : subscribers) {
+					s.updatePlayer(clone);
+				}
+			}
+
 			if (!away) {
 				tryStart();
 			}
+			return true;
+
 		}
+		return false;
 	}
 
 	static Game getInstance() {

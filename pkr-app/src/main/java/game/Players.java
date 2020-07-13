@@ -1,9 +1,13 @@
 package game;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+
+import bank.BankServer;
 
 public class Players {
 	private Player[] players;
@@ -30,6 +34,8 @@ public class Players {
 		}
 
 		players[adjustedSeat] = player;
+		player.setSeat(adjustedSeat);
+		;
 	}
 
 	public void remove(Player player) {
@@ -139,13 +145,16 @@ public class Players {
 	}
 
 	public void reset() {
+		Map<String, Double> buyins = new HashMap<>();
 		for (Player p : players) {
 			if (p != null) {
 				p.setCards(null);
 				p.resetBet();
 				p.resetWin();
+				buyins.put(p.getName(), p.getCash());
 			}
 		}
+		BankServer.massUpdateBuyin(buyins);
 
 	}
 

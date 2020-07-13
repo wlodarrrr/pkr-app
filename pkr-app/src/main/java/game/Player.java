@@ -13,10 +13,9 @@ public class Player {
 	private boolean hasCards;
 	private Card[] cards;
 
-	public Player(String name, double cash, int seat) {
+	public Player(String name, double cash) {
 		this.name = name;
 		this.cash = cash;
-		this.seat = seat;
 	}
 
 	public String getName() {
@@ -104,7 +103,8 @@ public class Player {
 	}
 
 	public Player publicClone(boolean showCards) {
-		Player clone = new Player(name, cash, seat);
+		Player clone = new Player(name, cash);
+		clone.seat = seat;
 		clone.bet = bet;
 		clone.win = win;
 		clone.isAway = isAway;

@@ -34,7 +34,7 @@ public class TableView extends AbsoluteLayout implements Subscriber {
 		setSeatsAndBets();
 
 		pot = new TableBet();
-		add(pot, 390, 535);
+		add(pot, 400, 535);
 
 		board = new TableBoard();
 		add(board, 280, 430);

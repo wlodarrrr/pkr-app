@@ -79,7 +79,9 @@ public class TableActions extends VerticalLayout {
 
 		// add components to panel
 		HorizontalLayout hl = new HorizontalLayout(x12, x23, x34, xpot, xallin);
+		hl.setSpacing(false);
 		HorizontalLayout hl2 = new HorizontalLayout(fold, call, raise, raiseSize);
+		hl2.setSpacing(false);
 		add(hl, hl2);
 
 		// turn off at start

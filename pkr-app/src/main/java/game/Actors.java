@@ -35,7 +35,7 @@ public class Actors {
 		while (size() > 0) {
 			Player p = get(i);
 			if (p.isAllin()) {
-				actors.remove(i);
+				actors.remove(p);
 				i--;
 			} else {
 				actor = get(i);
@@ -51,7 +51,7 @@ public class Actors {
 		while (size() > 0) {
 			Player p = get(i);
 			if (p.isAllin()) {
-				actors.remove(i);
+				actors.remove(p);
 			} else {
 				actor = get(i);
 				return actor;

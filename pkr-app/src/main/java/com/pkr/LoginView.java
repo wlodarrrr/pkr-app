@@ -31,7 +31,7 @@ public class LoginView extends VerticalLayout implements DbClient {
 		tfBankroll = new TextField(TextConstants.BANKROLL);
 		tfBankroll.setVisible(false);
 
-		bLogin = new Button(TextConstants.LOGIN, e -> log());
+		bLogin = new Button(TextConstants.LOG_IN, e -> log());
 		logged = false;
 
 		add(tfLogin, tfPass, tfBankroll, bLogin);
@@ -69,7 +69,7 @@ public class LoginView extends VerticalLayout implements DbClient {
 		tfLogin.setEnabled(!loggedIn);
 		tfPass.setVisible(!loggedIn);
 		tfBankroll.setVisible(loggedIn);
-		bLogin.setText(loggedIn ? TextConstants.LOGOUT : TextConstants.LOGIN);
+		bLogin.setText(loggedIn ? TextConstants.LOG_OUT : TextConstants.LOG_IN);
 		logged = loggedIn;
 	}
 }

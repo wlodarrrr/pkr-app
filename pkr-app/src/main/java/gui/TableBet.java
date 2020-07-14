@@ -1,4 +1,4 @@
-package com.pkr;
+package gui;
 
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Span;

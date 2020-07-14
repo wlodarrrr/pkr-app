@@ -1,4 +1,4 @@
-package com.pkr;
+package gui;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.html.Div;

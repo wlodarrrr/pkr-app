@@ -1,4 +1,4 @@
-package db;
+package gui;
 
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.CssImport;
@@ -7,6 +7,10 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.page.Push;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+
+import db.User;
+import db.UserService;
+
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;

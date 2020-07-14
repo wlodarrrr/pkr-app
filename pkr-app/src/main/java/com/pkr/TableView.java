@@ -64,6 +64,7 @@ public class TableView extends AbsoluteLayout implements Subscriber {
 			seats[index].setClickable(true);
 			seats[index].addClickListener(e -> sit(index, getBuyIn()));
 		}
+
 	}
 
 	private double getBuyIn() {

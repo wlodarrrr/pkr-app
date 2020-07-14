@@ -2,6 +2,8 @@ package chat;
 
 import java.util.Set;
 
+import db.Database;
+
 public interface ChatClient {
 
 	default void deregister() {
@@ -18,8 +20,12 @@ public interface ChatClient {
 
 	void receive(String sender, String message);
 
-	default void register() {
-		ChatServer.register(this);
+	default boolean register(String name, String pass) {
+		boolean auth = Database.auth(name, pass);
+		if (auth) {
+			ChatServer.register(this);
+		}
+		return auth;
 	}
 
 	default void send(String message) {

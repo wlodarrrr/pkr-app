@@ -9,12 +9,10 @@ public class Actors {
 
 	public Actors(List<Player> list) {
 		if (list == null) {
-			System.out.println("Null list.");
-			return;
+			throw new IllegalStateException("List is null.");
 		}
 		if (list.size() == 0) {
-			System.out.println("Empty list.");
-			return;
+			throw new IllegalStateException("List is empty.");
 		}
 
 		actors = list;

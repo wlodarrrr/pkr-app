@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import bank.BankServer;
+import db.Database;
 
 public class Players {
 	private Player[] players;
@@ -154,7 +154,7 @@ public class Players {
 				buyins.put(p.getName(), p.getCash());
 			}
 		}
-		BankServer.massUpdateBuyin(buyins);
+		Database.massUpdateBuyin(buyins);
 
 	}
 

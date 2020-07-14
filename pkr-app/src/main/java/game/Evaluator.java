@@ -5,13 +5,14 @@ import java.util.List;
 import java.util.Set;
 
 import cards.Card;
+import cards.TextConstants;
 
 public class Evaluator {
 
 	public static List<Player> winnersFrom(Set<Player> fighters, Card[] board) {
 
 		if (fighters.size() == 0) {
-			throw new IllegalStateException("Everyone folded.");
+			return null;
 		}
 
 		// find winners

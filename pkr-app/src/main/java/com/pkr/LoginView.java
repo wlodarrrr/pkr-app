@@ -1,13 +1,15 @@
 package com.pkr;
 
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
 
-import bank.BankClient;
+import db.Database;
+import db.DbClient;
 
-public class LoginView extends VerticalLayout implements BankClient {
+public class LoginView extends VerticalLayout implements DbClient {
 
 	private final Button bLogin;
 	private final MainView mv;
@@ -19,7 +21,7 @@ public class LoginView extends VerticalLayout implements BankClient {
 	public LoginView(MainView mv) {
 		this.mv = mv;
 		setWidth("200px");
-		setHeight("250px");
+		setHeight("300px");
 		addClassNames("box");
 
 		tfLogin = new TextField("Login");
@@ -50,16 +52,23 @@ public class LoginView extends VerticalLayout implements BankClient {
 		if (logged) {
 			mv.logout();
 		} else {
-			mv.login(tfLogin.getValue(), tfPass.getValue());
+			boolean auth = Database.auth(tfLogin.getValue(), tfPass.getValue());
+			if (auth) {
+				mv.login(tfLogin.getValue(), tfPass.getValue());
+			} else {
+				Notification.show("Incorrect login/pass combination.");
+			}
 		}
 	}
 
-	public void login(boolean login) {
-		register();
-		tfLogin.setEnabled(!login);
-		tfPass.setVisible(!login);
-		tfBankroll.setVisible(login);
-		bLogin.setText(login ? "Logout" : "Login");
-		logged = login;
+	public void login(boolean loggedIn) {
+		if (loggedIn) {
+			register(tfLogin.getValue(), tfPass.getValue());
+		}
+		tfLogin.setEnabled(!loggedIn);
+		tfPass.setVisible(!loggedIn);
+		tfBankroll.setVisible(loggedIn);
+		bLogin.setText(loggedIn ? "Logout" : "Login");
+		logged = loggedIn;
 	}
 }

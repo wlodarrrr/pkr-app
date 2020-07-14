@@ -11,7 +11,7 @@ public class ChatServer {
 
 	private static final ExecutorService executor = Executors.newSingleThreadExecutor();
 
-	static void broadcast(String name, String message) {
+	public static void broadcast(String name, String message) {
 		ChatServer.executor.execute(() -> {
 
 			// check if message is not empty

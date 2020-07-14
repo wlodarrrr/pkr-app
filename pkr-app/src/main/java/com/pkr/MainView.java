@@ -43,11 +43,9 @@ public class MainView extends HorizontalLayout {
 		this.name = name;
 		loginView.login(true);
 
-		chatView.setVisible(true);
-		chatView.register();
+		chatView.setVisible(chatView.register(name, pass));
 
-		tableView.setVisible(true);
-		tableView.join();
+		tableView.setVisible(tableView.join(name, pass));
 
 	}
 

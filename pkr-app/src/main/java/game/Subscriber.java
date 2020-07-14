@@ -3,6 +3,7 @@ package game;
 import java.util.Set;
 
 import cards.Card;
+import db.Database;
 
 public interface Subscriber {
 
@@ -31,7 +32,7 @@ public interface Subscriber {
 	default void sit(int seat, double buyin) {
 		Game.getInstance().sit(this, seat, buyin);
 	}
-	
+
 	default boolean setAway(boolean away) {
 		return Game.getInstance().setAway(this, away);
 	}
@@ -40,8 +41,13 @@ public interface Subscriber {
 		Game.getInstance().stand(this);
 	}
 
-	default void join() {
-		Game.getInstance().join(this);
+	default boolean join(String name, String pass) {
+
+		boolean auth = Database.auth(name, pass);
+		if (auth) {
+			Game.getInstance().join(this);
+		}
+		return auth;
 	}
 
 	void doShowdown(Set<Player> playersToShow, Card[] clone);

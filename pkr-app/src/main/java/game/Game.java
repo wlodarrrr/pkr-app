@@ -7,9 +7,11 @@ import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import bank.BankServer;
 import cards.Card;
 import cards.Deck;
+import cards.TextConstants;
+import chat.ChatServer;
+import db.Database;
 
 public class Game {
 
@@ -177,6 +179,14 @@ public class Game {
 		for (Subscriber s : subscribers) {
 			s.doShowdown(clonesToShow, boardToShow);
 		}
+		// construct text message
+		String boardToString = TextConstants.BOARD + ": " + cardsToString(boardToShow);
+		ChatServer.broadcast("", TextConstants.HAND_ENDED);
+		ChatServer.broadcast("", boardToString);
+		for (Player p : clonesToShow) {
+			String pToShow = p.getName() + " " + cardsToString(p.getCards()) + " " + TextConstants.WON + " " + p.getWin() + ".";
+			ChatServer.broadcast("", pToShow);
+		}
 
 		// cleanup
 		players.reset();
@@ -208,6 +218,21 @@ public class Game {
 
 		}, 4444);
 
+	}
+
+	private String cardsToString(Card[] cards) {
+		if (cards == null) {
+			return "[]";
+		}
+		if (cards.length == 0) {
+			return "[]";
+		}
+		String s = "[";
+		for (Card c : cards) {
+			s += c.toString() + ",";
+		}
+		s = s.substring(0, s.length() - 1) + "]";
+		return s;
 	}
 
 	private void fullRefresh(Subscriber subscriber) {
@@ -245,7 +270,6 @@ public class Game {
 	void act(Subscriber subscriber, Action action, double amount) {
 		int index = indexOf(subscriber.getName());
 		if (index == -1) {
-			System.out.println("Subscriber is not sitting.");
 			return;
 		}
 		Player player = players.get(index);
@@ -263,7 +287,7 @@ public class Game {
 		case FOLD:
 			player.resetBet();
 			player.setCards(null);
-			BankServer.updateBuyin(player.getName(), player.getCash());
+			Database.updateBuyin(player.getName(), player.getCash());
 
 			actors.remove(player);
 			playersLeft--;
@@ -281,7 +305,6 @@ public class Game {
 		case RAISE:
 
 			if (player.getCash() < amount || payment >= amount) {
-				System.out.println("Player can't play for that amount");
 				return;
 			}
 
@@ -317,7 +340,7 @@ public class Game {
 
 	}
 
-	void join(Subscriber subscriber) {
+	boolean join(Subscriber subscriber) {
 		int index = indexOf(subscriber.getName());
 
 		if (index != -1) {
@@ -331,25 +354,24 @@ public class Game {
 		} else {
 
 			// handle case where subscriber is not really in game, but has buyin
-			BankServer.buyout(subscriber.getName());
+			Database.buyout(subscriber.getName());
 		}
 		subscribers.add(subscriber);
 		fullRefresh(subscriber);
+		return true;
 	}
 
 	void sit(Subscriber subscriber, int seat, double buyin) {
 		int index = indexOf(subscriber.getName());
 		if (index != -1) {
-			System.out.println("Player is already sitting.");
 			return;
 		}
 		if (players.get(seat) != null) {
-			System.out.println("Seat is taken.");
 			return;
 		}
 
 		Player p = new Player(subscriber.getName(), buyin);
-		BankServer.buyin(subscriber.getName(), buyin);
+		Database.buyin(subscriber.getName(), buyin);
 		players.add(p, seat);
 		Player clone = p.publicClone(false);
 		sittingSubs[seat] = subscriber;
@@ -363,18 +385,16 @@ public class Game {
 	void stand(Subscriber subscriber) {
 		int index = indexOf(subscriber.getName());
 		if (index == -1) {
-			System.out.println("Subscriber is not sitting.");
 			return;
 		}
 
 		Player player = players.get(index);
 		if (player.hasCards()) {
-			System.out.println("Subscriber is in game.");
 			return;
 		}
 
 		sittingSubs[index] = null;
-		BankServer.buyout(player.getName());
+		Database.buyout(player.getName());
 		Player clone = player.publicClone(false);
 		for (Subscriber s : subscribers) {
 			s.removePlayer(clone);

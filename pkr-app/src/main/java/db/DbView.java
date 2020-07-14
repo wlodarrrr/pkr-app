@@ -1,15 +1,21 @@
 package db;
 
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.page.Push;
+import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 
 @Route("admin")
+@Push
+@PageTitle("Poker")
+@CssImport("./styles/shared-styles.css")
+@CssImport(value = "./styles/vaadin-text-field-styles.css", themeFor = "vaadin-text-field")
 public class DbView extends VerticalLayout {
 
 	@Autowired
@@ -22,7 +28,7 @@ public class DbView extends VerticalLayout {
 
 	public DbView() {
 		updateGrid();
-		grid.setColumns("firstName", "lastName");
+		grid.setColumns("name", "pass", "cash", "buyin");
 		add(grid, save);
 	}
 

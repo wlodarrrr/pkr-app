@@ -11,6 +11,7 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 
+import cards.TextConstants;
 import chat.ChatClient;
 
 public class ChatView extends VerticalLayout implements ChatClient {
@@ -36,7 +37,7 @@ public class ChatView extends VerticalLayout implements ChatClient {
 	public void createGUI() {
 
 		chatBox = new TextField();
-		chatSend = new Button("Send");
+		chatSend = new Button(TextConstants.SEND);
 		chatSend.setWidth("auto");
 		final HorizontalLayout hl1 = new HorizontalLayout(chatBox, chatSend);
 		hl1.setWidthFull();

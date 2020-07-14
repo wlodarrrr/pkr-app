@@ -29,7 +29,6 @@ public class Players {
 	public void add(Player player, int seat) {
 		int adjustedSeat = seat % players.length;
 		if (players[adjustedSeat] != null) {
-			System.out.println("Seat " + seat + " is taken.");
 			return;
 		}
 
@@ -40,7 +39,6 @@ public class Players {
 
 	public void remove(Player player) {
 		if (player == null) {
-			System.out.println("Cannot remove null.");
 			return;
 		}
 		for (int i = 0; i < players.length; i++) {
@@ -57,7 +55,6 @@ public class Players {
 
 	public int indexOf(Player player) {
 		if (player == null) {
-			System.out.println("Null has no index.");
 			return -1;
 		}
 		for (int i = 0; i < players.length; i++) {
@@ -65,8 +62,6 @@ public class Players {
 				return -1;
 			}
 		}
-
-		System.out.println("Player is not on list.");
 		return -1;
 	}
 
@@ -78,8 +73,6 @@ public class Players {
 				return players[i];
 			}
 		}
-
-		System.out.println("No players left.");
 		return null;
 	}
 

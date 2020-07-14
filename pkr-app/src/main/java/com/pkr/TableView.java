@@ -8,6 +8,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 
 import cards.Card;
+import cards.TextConstants;
 import game.Player;
 import game.Subscriber;
 
@@ -42,13 +43,13 @@ public class TableView extends AbsoluteLayout implements Subscriber {
 		actions = new TableActions(this);
 		add(actions, 750, 440);
 
-		tfBuyIn = new TextField("BuyIn");
-		cbAway = new Checkbox("Away", false);
+		tfBuyIn = new TextField(TextConstants.BUY_IN);
+		cbAway = new Checkbox(TextConstants.AWAY, false);
 		cbAway.setVisible(false);
 		cbAway.addValueChangeListener(e -> {
 			setAway(e.getValue());
 		});
-		bStandUp = new Button("Stand up");
+		bStandUp = new Button(TextConstants.STAND_UP);
 		bStandUp.setVisible(false);
 		bStandUp.addClickListener(e -> {
 			stand();

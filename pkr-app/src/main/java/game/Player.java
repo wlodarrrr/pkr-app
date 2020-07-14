@@ -32,7 +32,6 @@ public class Player {
 
 	public double pay(double amount) {
 		if (amount < 0) {
-			System.out.println("Negative payment.");
 			return 0;
 		} else {
 			double payment = Math.min(cash, amount);
@@ -44,7 +43,6 @@ public class Player {
 
 	public void win(double amount) {
 		if (amount < 0) {
-			System.out.println("player can't win negative amount.");
 			return;
 		} else {
 			cash += amount;

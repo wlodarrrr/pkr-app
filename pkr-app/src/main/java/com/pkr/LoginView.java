@@ -6,6 +6,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
 
+import cards.TextConstants;
 import db.Database;
 import db.DbClient;
 
@@ -24,13 +25,13 @@ public class LoginView extends VerticalLayout implements DbClient {
 		setHeight("300px");
 		addClassNames("box");
 
-		tfLogin = new TextField("Login");
-		tfPass = new PasswordField("Password");
+		tfLogin = new TextField(TextConstants.LOGIN);
+		tfPass = new PasswordField(TextConstants.PASSWORD);
 
-		tfBankroll = new TextField("Bankroll");
+		tfBankroll = new TextField(TextConstants.BANKROLL);
 		tfBankroll.setVisible(false);
 
-		bLogin = new Button("Login", e -> log());
+		bLogin = new Button(TextConstants.LOGIN, e -> log());
 		logged = false;
 
 		add(tfLogin, tfPass, tfBankroll, bLogin);
@@ -56,7 +57,7 @@ public class LoginView extends VerticalLayout implements DbClient {
 			if (auth) {
 				mv.login(tfLogin.getValue(), tfPass.getValue());
 			} else {
-				Notification.show("Incorrect login/pass combination.");
+				Notification.show(TextConstants.INCORRECT_LOGIN_PASS_COMBINATION);
 			}
 		}
 	}
@@ -68,7 +69,7 @@ public class LoginView extends VerticalLayout implements DbClient {
 		tfLogin.setEnabled(!loggedIn);
 		tfPass.setVisible(!loggedIn);
 		tfBankroll.setVisible(loggedIn);
-		bLogin.setText(loggedIn ? "Logout" : "Login");
+		bLogin.setText(loggedIn ? TextConstants.LOGOUT : TextConstants.LOGIN);
 		logged = loggedIn;
 	}
 }

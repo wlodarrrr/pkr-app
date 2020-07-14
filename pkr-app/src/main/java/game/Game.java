@@ -66,6 +66,7 @@ public class Game {
 		playersLeft = actors.size();
 
 		for (Subscriber s : subscribers) {
+			s.updateDealer(dealerPosition);
 			fullRefresh(s);
 		}
 
@@ -184,7 +185,8 @@ public class Game {
 		ChatServer.broadcast("", TextConstants.HAND_ENDED);
 		ChatServer.broadcast("", boardToString);
 		for (Player p : clonesToShow) {
-			String pToShow = p.getName() + " " + cardsToString(p.getCards()) + " " + TextConstants.WON + " " + p.getWin() + ".";
+			String pToShow = p.getName() + " " + cardsToString(p.getCards()) + " " + TextConstants.WON + " "
+					+ p.getWin() + ".";
 			ChatServer.broadcast("", pToShow);
 		}
 

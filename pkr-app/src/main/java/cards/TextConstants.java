@@ -13,6 +13,6 @@ public abstract class TextConstants {
 	public static final String LOGIN = "Login";
 	public static final String LOG_IN = "Zaloguj";
 	public static final String LOG_OUT = "Wyloguj";
-	public static final String SEND = "Send";
+	public static final String SEND = "Wyślij";
 
 }

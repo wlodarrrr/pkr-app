@@ -1,4 +1,4 @@
-package game;
+package app.game;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -7,63 +7,61 @@ import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import cards.Card;
-import cards.Deck;
-import cards.TextConstants;
-import chat.ChatServer;
-import db.Database;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
+import app.chat.Chatter;
+import app.chat.Message;
+import app.db.Database;
+import app.utils.Card;
+import app.utils.Deck;
+import app.utils.TextConstants;
+
+@Service
 public class Game {
 
 	private static final int size = 10;
-	private static final Game instance = new Game();;
 	private final Set<Subscriber> subscribers = new HashSet<Subscriber>();
 	private final Subscriber[] sittingSubs = new Subscriber[size];
-	private final Players players = new Players(size);
+	private final Players players;
 	private boolean running = false;
 	private double blind = 1;
 	private int dealerPosition = -1;
 	private Card[] board = new Card[5];
-	private Actors actors;
-	private Player actor;
 	private Set<Pot> pots = new HashSet<Pot>();
 	private double bet = 0;
-	private int playersLeft = 0;
+	private int playersToAct = 0;
 	private int round = 0;
+	private Database db;
+
+	public Game(@Autowired Database db) {
+		this.db = db;
+		players = new Players(db, size);
+	}
 
 	private void tryStart() {
 		if (running) {
 			return;
 		}
 
-		if (players.getReadyPlayersCount() < 2) {
+		if (players.countReadyPlayers() < 2) {
 			return;
 		}
 
 		running = true;
+		dealerPosition = players.nextDealer();
 
-		Player dealer = players.after(dealerPosition);
-		dealerPosition = players.indexOf(dealer);
-
-		List<Player> readies = players.getReadyPlayers(dealer);
-		dealCards(readies);
-		actors = new Actors(readies);
-		actor = actors.reset();
+		dealCards(players.getReadyPlayers());
 
 		// blinds
-		double sb = actor.pay(blind / 2);
-		addToPot(actor, sb);
-		if (actor.isAllin()) {
-			actors.remove(actor);
-		}
-		actor = actors.nextActor();
+		final Player sb = players.nextActor();
+		addToPot(sb, sb.pay(blind / 2));
 
-		double bb = actor.pay(blind);
-		addToPot(actor, bb);
-		actor = actors.nextActor();
+		final Player bb = players.nextActor();
+		addToPot(bb, bb.pay(blind));
 
 		bet = blind;
-		playersLeft = actors.size();
+		playersToAct = players.countPlayersWithCardsAndCash();
 
 		for (Subscriber s : subscribers) {
 			s.updateDealer(dealerPosition);
@@ -109,25 +107,15 @@ public class Game {
 		}
 	}
 
-	private int indexOf(String name) {
-		for (int i = 0; i < size; i++) {
-			if (players.get(i) != null) {
-				if (players.get(i).getName().contentEquals(name)) {
-					return i;
-				}
-			}
-		}
-		return -1;
-	}
-
 	private void endRound() {
 		// reset
-		actor = actors.reset();
+		players.resetBets();
+		players.resetActor();
 		bet = 0;
 
 		// count players left
-		playersLeft = actors.size();
-		if (playersLeft < 2) {
+		playersToAct = players.countPlayersWithCardsAndCash();
+		if (playersToAct < 2) {
 			endHand();
 			return;
 		}
@@ -149,7 +137,7 @@ public class Game {
 		Set<Player> clonesToShow = new HashSet<>();
 
 		// assign winnings to players
-		players.resetWins();
+		players.resetBets();
 
 		Set<Player> playersWithCards = players.getPlayersWithCards();
 		if (playersWithCards.size() == 1) {
@@ -176,30 +164,28 @@ public class Game {
 		}
 
 		// showdown
-		Card[] boardToShow = round == 0 ? null : Arrays.copyOf(board, Math.min(round + 2, 5));
+		final Card[] boardToShow = round == 0 ? null : Arrays.copyOf(board, Math.min(round + 2, 5));
 		for (Subscriber s : subscribers) {
 			s.doShowdown(clonesToShow, boardToShow);
 		}
 		// construct text message
 		String boardToString = TextConstants.BOARD + ": " + cardsToString(boardToShow);
-		ChatServer.broadcast("", TextConstants.HAND_ENDED);
-		ChatServer.broadcast("", boardToString);
+		Chatter.send(new Message("", TextConstants.HAND_ENDED));
+		Chatter.send(new Message("", boardToString));
 		for (Player p : clonesToShow) {
 			String pToShow = p.getName() + " " + cardsToString(p.getCards()) + " " + TextConstants.WON + " "
-					+ p.getWin() + ".";
-			ChatServer.broadcast("", pToShow);
+					+ p.getBet() + ".";
+			Chatter.send(new Message("", pToShow));
 		}
 
 		// cleanup
-		players.reset();
+		players.resetAll();
 		for (int i = 0; i < 5; i++) {
 			board[i] = null;
 		}
-		actor = null;
-		actors = null;
 		pots.clear();
 		bet = 0;
-		playersLeft = 0;
+		playersToAct = 0;
 		round = 0;
 
 		Timer t = new Timer();
@@ -238,22 +224,27 @@ public class Game {
 	}
 
 	private void fullRefresh(Subscriber subscriber) {
-		Set<Player> clones = players.getClones();
+		final Set<Player> clones = players.getClones();
 		for (Player p : clones) {
 			subscriber.updatePlayer(p);
 		}
 		if (running) {
-			Card[] boardToShow = round == 0 ? null : Arrays.copyOf(board, Math.min(round + 2, 5));
+			final Card[] boardToShow = round == 0 ? null : Arrays.copyOf(board, Math.min(round + 2, 5));
 			subscriber.updateBoard(boardToShow);
 			subscriber.updatePot(totalPot());
 			subscriber.updateDealer(dealerPosition);
 
-			int i = indexOf(subscriber.getName());
+			final int i = players.indexOf(subscriber.getName());
 			if (i != -1) {
-				subscriber.updateHoleCards(players.get(i).getCards());
+				final Card[] cards = players.get(i).getCards();
+				subscriber.updateHoleCards(cards);
 			}
 
-			subscriber.toAct(actor.publicClone(false), bet - actor.getBet(), totalPot());
+			final Player actor = players.currentActor();
+			if (actor != null) {
+				subscriber.toAct(actor.publicClone(false), bet - actor.getBet(), totalPot());
+			}
+
 		} else {
 			subscriber.updateBoard(null);
 			subscriber.updatePot(0);
@@ -269,13 +260,13 @@ public class Game {
 		return sum;
 	}
 
-	void act(Subscriber subscriber, Action action, double amount) {
-		int index = indexOf(subscriber.getName());
+	public void act(Subscriber subscriber, Action action, double amount) {
+		int index = players.indexOf(subscriber.getName());
 		if (index == -1) {
 			return;
 		}
-		Player player = players.get(index);
-		if (actor != player) {
+		final Player player = players.get(index);
+		if (!player.equals(players.currentActor())) {
 			return;
 		}
 
@@ -284,41 +275,30 @@ public class Game {
 			amount = player.getCash();
 		}
 
-		double payment = bet - player.getBet();
+		double toCall = bet - player.getBet();
 		switch (action) {
 		case FOLD:
 			player.resetBet();
 			player.setCards(null);
-			Database.updateBuyin(player.getName(), player.getCash());
+			db.updateBuyin(player.getName(), player.getCash());
 
-			actors.remove(player);
-			playersLeft--;
+			playersToAct--;
 			break;
 		case CALL:
-
-			payment = player.pay(payment);
-			addToPot(player, payment);
-
-			if (player.isAllin()) {
-				actors.remove(player);
-			}
-			playersLeft--;
+			addToPot(player, player.pay(toCall));
+			playersToAct--;
 			break;
 		case RAISE:
-
-			if (player.getCash() < amount || payment >= amount) {
+			if (toCall >= amount) {
 				return;
 			}
 
-			payment = player.pay(amount);
-			addToPot(player, payment);
+			addToPot(player, player.pay(amount));
 			bet = player.getBet();
 
-			if (player.isAllin()) {
-				actors.remove(player);
-				playersLeft = actors.size();
-			} else {
-				playersLeft = actors.size() - 1;
+			playersToAct = players.countPlayersWithCardsAndCash();
+			if (!player.isAllin()) {
+				playersToAct--;
 			}
 			break;
 		}
@@ -327,65 +307,71 @@ public class Game {
 			s.updatePlayer(pClone);
 		}
 
-		if (playersLeft < 1) {
-			endRound();
-		} else if (action == Action.FOLD && players.countPlayersWithCards() == 1) {
+		// if there is none to act or after fold there is only one person with cards
+		if (playersToAct < 1 || (action == Action.FOLD && players.countPlayersWithCards() == 1)) {
 			endRound();
 		} else {
 
-			actor = actors.nextActor();
-			Player aClone = actor.publicClone(false);
+			final Player actor = players.nextActor();
+			final Player clone = actor.publicClone(false);
 			for (Subscriber s : subscribers) {
-				s.toAct(aClone, bet - aClone.getBet(), totalPot());
+				s.toAct(clone, bet - clone.getBet(), totalPot());
 			}
 		}
 
 	}
 
-	boolean join(Subscriber subscriber) {
-		int index = indexOf(subscriber.getName());
+	public boolean join(Subscriber subscriber) {
+		int index = players.indexOf(subscriber.getName());
 
 		if (index != -1) {
 
 			// handle case where player is already created for this subscriber
 			if (sittingSubs[index] != null) {
 				subscribers.remove(sittingSubs[index]);
-				sittingSubs[index].logout();
 			}
 			sittingSubs[index] = subscriber;
 		} else {
 
 			// handle case where subscriber is not really in game, but has buyin
-			Database.buyout(subscriber.getName());
+			db.buyout(subscriber.getName());
 		}
 		subscribers.add(subscriber);
 		fullRefresh(subscriber);
 		return true;
 	}
 
-	void sit(Subscriber subscriber, int seat, double buyin) {
-		int index = indexOf(subscriber.getName());
+	public boolean sit(Subscriber subscriber, int seat, double buyin) {
+		int index = players.indexOf(subscriber.getName());
 		if (index != -1) {
-			return;
+			return false;
 		}
 		if (players.get(seat) != null) {
-			return;
+			return false;
 		}
 
-		Player p = new Player(subscriber.getName(), buyin);
-		Database.buyin(subscriber.getName(), buyin);
+		final Player p = new Player(subscriber.getName(), buyin);
+		db.buyin(subscriber.getName(), buyin);
 		players.add(p, seat);
-		Player clone = p.publicClone(false);
+		final Player clone = p.publicClone(false);
 		sittingSubs[seat] = subscriber;
 		for (Subscriber s : subscribers) {
 			s.updatePlayer(clone);
 		}
-		tryStart();
+		Timer t = new Timer();
+		t.schedule(new TimerTask() {
 
+			@Override
+			public void run() {
+				tryStart();
+			}
+
+		}, 555);
+		return true;
 	}
 
-	void stand(Subscriber subscriber) {
-		int index = indexOf(subscriber.getName());
+	public void stand(Subscriber subscriber) {
+		int index = players.indexOf(subscriber.getName());
 		if (index == -1) {
 			return;
 		}
@@ -396,8 +382,8 @@ public class Game {
 		}
 
 		sittingSubs[index] = null;
-		Database.buyout(player.getName());
-		Player clone = player.publicClone(false);
+		db.buyout(player.getName());
+		final Player clone = player.publicClone(false);
 		for (Subscriber s : subscribers) {
 			s.removePlayer(clone);
 		}
@@ -405,8 +391,8 @@ public class Game {
 
 	}
 
-	boolean setAway(Subscriber subscriber, boolean away) {
-		int index = indexOf(subscriber.getName());
+	public boolean setAway(Subscriber subscriber, boolean away) {
+		int index = players.indexOf(subscriber.getName());
 		if (index != -1) {
 			Player player = players.get(index);
 			player.setAway(away);
@@ -424,10 +410,5 @@ public class Game {
 
 		}
 		return false;
-	}
-
-	static Game getInstance() {
-		return instance;
-
 	}
 }

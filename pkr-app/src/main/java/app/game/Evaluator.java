@@ -1,11 +1,10 @@
-package game;
+package app.game;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import cards.Card;
-import cards.TextConstants;
+import app.utils.Card;
 
 public class Evaluator {
 

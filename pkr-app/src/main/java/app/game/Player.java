@@ -1,6 +1,6 @@
-package game;
+package app.game;
 
-import cards.Card;
+import app.utils.Card;
 
 public class Player {
 
@@ -8,8 +8,7 @@ public class Player {
 	private double cash;
 	private int seat;
 	private double bet;
-	private double win;
-	private boolean isAway;
+	private boolean away;
 	private boolean hasCards;
 	private Card[] cards;
 
@@ -46,17 +45,8 @@ public class Player {
 			return;
 		} else {
 			cash += amount;
-			win += amount;
+			bet += amount;
 		}
-	}
-
-	public double getWin() {
-		return win;
-	}
-
-	public void resetWin() {
-		win = 0;
-
 	}
 
 	public double getBet() {
@@ -68,11 +58,11 @@ public class Player {
 	}
 
 	public boolean isAway() {
-		return isAway;
+		return away;
 	}
 
 	public void setAway(boolean isAway) {
-		this.isAway = isAway;
+		this.away = isAway;
 	}
 
 	public boolean hasCards() {
@@ -104,13 +94,20 @@ public class Player {
 		Player clone = new Player(name, cash);
 		clone.seat = seat;
 		clone.bet = bet;
-		clone.win = win;
-		clone.isAway = isAway;
+		clone.away = away;
 		clone.hasCards = hasCards;
 		if (showCards) {
 			clone.cards = cards;
 		}
 
 		return clone;
+	}
+
+	public boolean canPlay() {
+		return hasCards && cash > 0;
+	}
+
+	public boolean isReady() {
+		return !away && cash > 0;
 	}
 }

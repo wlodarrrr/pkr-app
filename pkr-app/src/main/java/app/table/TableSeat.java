@@ -1,8 +1,9 @@
-package gui;
+package app.table;
 
 import com.vaadin.flow.component.html.Span;
 
-import cards.Card;
+import app.utils.AbsoluteLayout;
+import app.utils.Card;
 
 public class TableSeat extends AbsoluteLayout {
 

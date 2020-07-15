@@ -1,4 +1,4 @@
-package cards;
+package app.utils;
 
 public abstract class TextConstants {
 	public static final String WON = "wygrał";

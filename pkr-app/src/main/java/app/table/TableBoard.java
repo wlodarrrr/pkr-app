@@ -1,8 +1,8 @@
-package gui;
+package app.table;
 
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 
-import cards.Card;
+import app.utils.Card;
 
 public class TableBoard extends HorizontalLayout {
 

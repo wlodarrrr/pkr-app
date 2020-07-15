@@ -1,4 +1,4 @@
-package gui;
+package app.table;
 
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Span;

@@ -1,4 +1,4 @@
-package gui;
+package app.utils;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.html.Div;

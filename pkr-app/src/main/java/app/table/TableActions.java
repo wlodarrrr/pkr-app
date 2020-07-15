@@ -1,4 +1,4 @@
-package gui;
+package app.table;
 
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -6,7 +6,8 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 
-import game.Action;
+import app.game.Action;
+import app.game.Game;
 
 public class TableActions extends VerticalLayout {
 	private final Button call;
@@ -17,20 +18,15 @@ public class TableActions extends VerticalLayout {
 	private double toCall;
 	private double allin;
 
-	public TableActions(TableView tv) {
+	public TableActions(Game game, TableView tv) {
 		// actions
-		fold = new Button("Fold", e -> {
-			tv.doAction(Action.FOLD, 0);
-		});
-		call = new Button("Call", e -> {
-			tv.doAction(Action.CALL, 0);
-		});
+		fold = new Button("Fold", e -> game.act(tv, Action.FOLD, 0));
+		call = new Button("Call", e -> game.act(tv, Action.CALL, 0));
 		raiseSize = new TextField();
 		raise = new Button("Raise", e -> {
 			try {
 				double d = Double.parseDouble(raiseSize.getValue());
-				tv.doAction(Action.RAISE, d);
-			} catch (final Exception ex) {
+				game.act(tv, Action.RAISE, d);
 			} finally {
 				raiseSize.setValue("");
 			}

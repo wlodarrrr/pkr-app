@@ -1,4 +1,4 @@
-package cards;
+package app.utils;
 
 import com.vaadin.flow.component.html.Image;
 

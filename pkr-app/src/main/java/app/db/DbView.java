@@ -10,7 +10,7 @@ import com.vaadin.flow.router.Route;
 public class DbView extends VerticalLayout {
 
 	public DbView(@Autowired Database db) {
-		Grid<User> grid = new Grid<>();
+		Grid<User> grid = new Grid<>(User.class);
 		grid.setColumns("name", "pass", "cash", "buyin");
 		grid.setItems(db.findAll());
 		add(grid);

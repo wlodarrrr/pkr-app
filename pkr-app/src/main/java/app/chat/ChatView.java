@@ -43,9 +43,12 @@ public class ChatView extends VerticalLayout {
 	}
 
 	private void receive(Message message) {
-		final Span msg = new Span(message.getSender() + ": " + message.getMessage());
+		final Span msg = new Span();
 		if (message.getType().equals(Type.SYSTEM)) {
 			msg.addClassName("systemMsg");
+			msg.setText(message.getMessage());
+		} else {
+			msg.setText(message.getSender() + ": " + message.getMessage());
 		}
 		chatArea.add(msg);
 

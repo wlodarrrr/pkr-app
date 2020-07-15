@@ -63,9 +63,9 @@ public class Game {
 
 		bet = blind;
 		playersToAct = players.countPlayersWithCardsAndCash();
+		players.nextActor();
 
 		for (Subscriber s : subscribers) {
-			s.updateDealer(dealerPosition);
 			fullRefresh(s);
 		}
 
@@ -174,9 +174,11 @@ public class Game {
 		Chatter.send(new Message("", TextConstants.HAND_ENDED, Type.SYSTEM));
 		Chatter.send(new Message("", boardToString, Type.SYSTEM));
 		for (Player p : clonesToShow) {
-			String pToShow = p.getName() + " " + cardsToString(p.getCards()) + " " + TextConstants.WON + " "
-					+ p.getBet() + ".";
-			Chatter.send(new Message("", pToShow, Type.SYSTEM));
+			String cardsToShow = cardsToString(p.getCards());
+			String textToShow = p.getName() + " ";
+			textToShow += cardsToShow.length() == 0 ? "" : " ";
+			textToShow += TextConstants.WON + " " + p.getBet() + ".";
+			Chatter.send(new Message("", textToShow, Type.SYSTEM));
 		}
 
 		// cleanup
@@ -211,16 +213,16 @@ public class Game {
 
 	private String cardsToString(Card[] cards) {
 		if (cards == null) {
-			return "[]";
+			return "";
 		}
 		if (cards.length == 0) {
-			return "[]";
+			return "";
 		}
 		String s = "[";
 		for (Card c : cards) {
-			s += c.toString() + ",";
+			s += c.toString() + ", ";
 		}
-		s = s.substring(0, s.length() - 1) + "]";
+		s = s.substring(0, s.length() - 2) + "]";
 		return s;
 	}
 

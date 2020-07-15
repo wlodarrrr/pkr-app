@@ -14,6 +14,7 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.shared.Registration;
 
+import app.chat.Message.Type;
 import app.utils.TextConstants;
 
 @Route
@@ -36,13 +37,16 @@ public class ChatView extends VerticalLayout {
 
 	private void send(String name) {
 		if (chatBox.getValue().length() > 0) {
-			Chatter.send(new Message(name, chatBox.getValue()));
+			Chatter.send(new Message(name, chatBox.getValue(), Message.Type.MSG));
 			chatBox.setValue("");
 		}
 	}
 
 	private void receive(Message message) {
 		final Span msg = new Span(message.getSender() + ": " + message.getMessage());
+		if (message.getType().equals(Type.SYSTEM)) {
+			msg.addClassName("systemMsg");
+		}
 		chatArea.add(msg);
 
 		final String obj = "document.getElementById(\"chatArea\")";

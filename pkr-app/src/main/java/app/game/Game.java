@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import app.chat.Chatter;
 import app.chat.Message;
+import app.chat.Message.Type;
 import app.db.Database;
 import app.utils.Card;
 import app.utils.Deck;
@@ -170,12 +171,12 @@ public class Game {
 		}
 		// construct text message
 		String boardToString = TextConstants.BOARD + ": " + cardsToString(boardToShow);
-		Chatter.send(new Message("", TextConstants.HAND_ENDED));
-		Chatter.send(new Message("", boardToString));
+		Chatter.send(new Message("", TextConstants.HAND_ENDED, Type.SYSTEM));
+		Chatter.send(new Message("", boardToString, Type.SYSTEM));
 		for (Player p : clonesToShow) {
 			String pToShow = p.getName() + " " + cardsToString(p.getCards()) + " " + TextConstants.WON + " "
 					+ p.getBet() + ".";
-			Chatter.send(new Message("", pToShow));
+			Chatter.send(new Message("", pToShow, Type.SYSTEM));
 		}
 
 		// cleanup

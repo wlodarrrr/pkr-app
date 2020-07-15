@@ -99,3 +99,9 @@ body {
 	flex-direction: column-reverse !important;
 	
 }
+
+.systemMsg{
+	color: grey;
+	font-style: italic;
+	
+}

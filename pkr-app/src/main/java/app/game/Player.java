@@ -90,7 +90,7 @@ public class Player {
 		return hasCards && cash == 0;
 	}
 
-	public Player publicClone(boolean showCards) {
+	public synchronized Player publicClone(boolean showCards) {
 		Player clone = new Player(name, cash);
 		clone.seat = seat;
 		clone.bet = bet;

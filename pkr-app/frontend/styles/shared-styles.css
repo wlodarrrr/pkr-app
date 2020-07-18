@@ -19,6 +19,10 @@ html {
 body {
 	margin: 0 auto;
 	width:auto;
+	background-color: #a5d6a7 !important;
+}
+.table{
+	background-color: #a5d6a7 !important;
 }
 
 .centered {
@@ -30,10 +34,6 @@ body {
 .bets {
 	vertical-align: middle;
 	text-align: center;
-}
-
-.table{
-	background-color: #43a047;
 }
 
 .link:hover {

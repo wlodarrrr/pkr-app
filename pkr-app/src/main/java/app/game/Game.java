@@ -34,13 +34,15 @@ public class Game {
 	private int playersToAct = 0;
 	private int round = 0;
 	private Database db;
+	private Timer timer;
+	private int timerCounter = 0;
 
 	public Game(@Autowired Database db) {
 		this.db = db;
 		players = new Players(db, size);
 	}
 
-	private void tryStart() {
+	private synchronized void tryStart() {
 		if (running) {
 			return;
 		}
@@ -71,7 +73,7 @@ public class Game {
 
 	}
 
-	private void dealCards(List<Player> list) {
+	private synchronized void dealCards(List<Player> list) {
 		final Deck deck = new Deck();
 		for (final Player p : list) {
 			p.setCards(new Card[] { deck.deal(), deck.deal() });
@@ -83,7 +85,7 @@ public class Game {
 		}
 	}
 
-	private void addToPot(Player player, double amount) {
+	private synchronized void addToPot(Player player, double amount) {
 		for (final Pot pot : pots) {
 			if (!pot.contains(player)) {
 				final double potBet = pot.getBet();
@@ -108,7 +110,7 @@ public class Game {
 		}
 	}
 
-	private void endRound() {
+	private synchronized void endRound() {
 		// reset
 		players.resetBets();
 		players.resetActor();
@@ -133,7 +135,7 @@ public class Game {
 		}
 	}
 
-	private void endHand() {
+	private synchronized void endHand() {
 
 		Set<Player> clonesToShow = new HashSet<>();
 
@@ -164,22 +166,14 @@ public class Game {
 			}
 		}
 
-		// showdown
+		// show down
 		final Card[] boardToShow = round == 0 ? null : Arrays.copyOf(board, Math.min(round + 2, 5));
 		for (Subscriber s : subscribers) {
+			s.updateHoleCards(null);
 			s.doShowdown(clonesToShow, boardToShow);
 		}
 		// construct text message
-		String boardToString = TextConstants.BOARD + ": " + cardsToString(boardToShow);
-		Chatter.send(new Message("", TextConstants.HAND_ENDED, Type.SYSTEM));
-		Chatter.send(new Message("", boardToString, Type.SYSTEM));
-		for (Player p : clonesToShow) {
-			String cardsToShow = cardsToString(p.getCards());
-			String textToShow = p.getName() + " ";
-			textToShow += cardsToShow.length() == 0 ? "" : " ";
-			textToShow += TextConstants.WON + " " + p.getBet() + ".";
-			Chatter.send(new Message("", textToShow, Type.SYSTEM));
-		}
+		showdownOnChat(clonesToShow, boardToShow);
 
 		// cleanup
 		players.resetAll();
@@ -211,7 +205,28 @@ public class Game {
 
 	}
 
-	private String cardsToString(Card[] cards) {
+	private synchronized void showdownOnChat(Set<Player> clonesToShow, final Card[] boardToShow) {
+		Chatter.send(new Message("", TextConstants.HAND_ENDED, Type.SYSTEM));
+
+		// send board cards
+		if (boardToShow != null) {
+			if (boardToShow.length > 0) {
+				String boardToString = TextConstants.BOARD + ": " + cardsToString(boardToShow);
+				Chatter.send(new Message("", boardToString, Type.SYSTEM));
+			}
+		}
+
+		// send players with winnings + optionally cards
+		for (Player p : clonesToShow) {
+			String cardsToShow = cardsToString(p.getCards());
+			String textToShow = p.getName() + " ";
+			textToShow += cardsToShow.length() == 0 ? "" : "[" + cardsToShow + "] ";
+			textToShow += TextConstants.WON + " " + p.getBet() + ".";
+			Chatter.send(new Message("", textToShow, Type.SYSTEM));
+		}
+	}
+
+	private synchronized String cardsToString(Card[] cards) {
 		if (cards == null) {
 			return "";
 		}
@@ -226,7 +241,7 @@ public class Game {
 		return s;
 	}
 
-	private void fullRefresh(Subscriber subscriber) {
+	private synchronized void fullRefresh(Subscriber subscriber) {
 		final Set<Player> clones = players.getClones();
 		for (Player p : clones) {
 			subscriber.updatePlayer(p);
@@ -255,7 +270,7 @@ public class Game {
 		}
 	}
 
-	private double totalPot() {
+	private synchronized double totalPot() {
 		double sum = 0;
 		for (Pot pot : pots) {
 			sum += pot.size();
@@ -263,7 +278,7 @@ public class Game {
 		return sum;
 	}
 
-	public void act(Subscriber subscriber, Action action, double amount) {
+	public synchronized void act(Subscriber subscriber, Action action, double amount) {
 		int index = players.indexOf(subscriber.getName());
 		if (index == -1) {
 			return;
@@ -273,7 +288,16 @@ public class Game {
 			return;
 		}
 
-		// round to all in if amount is close or bigger
+		// cancel timer if exists
+		if (timer != null) {
+			timer.cancel();
+			timer.purge();
+			timer = null;
+		}
+		timerCounter = 0;
+
+		// rounding (to 0.01 + if over all-in, to all-in)
+		amount = ((double) Math.round(amount * 100)) / 100;
 		if (player.getCash() - amount < 0.01) {
 			amount = player.getCash();
 		}
@@ -308,10 +332,11 @@ public class Game {
 		Player pClone = player.publicClone(false);
 		for (Subscriber s : subscribers) {
 			s.updatePlayer(pClone);
+			s.updateTimer(timerCounter);
 		}
 
 		// if there is none to act or after fold there is only one person with cards
-		if (playersToAct < 1 || (action == Action.FOLD && players.countPlayersWithCards() == 1)) {
+		if (playersToAct < 1 || (action == Action.FOLD && players.countPlayersWithCards() <= 1)) {
 			endRound();
 		} else {
 
@@ -324,7 +349,33 @@ public class Game {
 
 	}
 
-	public boolean join(Subscriber subscriber) {
+	public synchronized void callClock() {
+		if (running && timer == null) {
+			timerCounter = 15;
+			timer = new Timer();
+			timer.schedule(new TimerTask() {
+
+				@Override
+				public void run() {
+					timerCounter--;
+					if (timerCounter <= 0) {
+						players.currentActor().setAway(true);
+						act(sittingSubs[players.indexOf(players.currentActor())], Action.FOLD, 0);
+						timer.cancel();
+						timer.purge();
+						timer = null;
+					}
+					for (Subscriber s : subscribers) {
+						s.updateTimer(timerCounter);
+					}
+				}
+
+			}, 0, 1000);
+
+		}
+	}
+
+	public synchronized boolean join(Subscriber subscriber) {
 		int index = players.indexOf(subscriber.getName());
 
 		if (index != -1) {
@@ -334,17 +385,19 @@ public class Game {
 				subscribers.remove(sittingSubs[index]);
 			}
 			sittingSubs[index] = subscriber;
+			subscriber.acceptSeat(index);
 		} else {
 
 			// handle case where subscriber is not really in game, but has buyin
-			db.buyout(subscriber.getName());
+			subscriber.updateBankroll(db.buyout(subscriber.getName()));
+
 		}
 		subscribers.add(subscriber);
 		fullRefresh(subscriber);
 		return true;
 	}
 
-	public boolean sit(Subscriber subscriber, int seat, double buyin) {
+	public synchronized boolean sit(Subscriber subscriber, int seat, double buyin) {
 		int index = players.indexOf(subscriber.getName());
 		if (index != -1) {
 			return false;
@@ -352,9 +405,12 @@ public class Game {
 		if (players.get(seat) != null) {
 			return false;
 		}
+		if (buyin <= blind) {
+			return false;
+		}
 
 		final Player p = new Player(subscriber.getName(), buyin);
-		db.buyin(subscriber.getName(), buyin);
+		subscriber.updateBankroll(db.buyin(subscriber.getName(), buyin));
 		players.add(p, seat);
 		final Player clone = p.publicClone(false);
 		sittingSubs[seat] = subscriber;
@@ -373,7 +429,7 @@ public class Game {
 		return true;
 	}
 
-	public void stand(Subscriber subscriber) {
+	public synchronized void stand(Subscriber subscriber) {
 		int index = players.indexOf(subscriber.getName());
 		if (index == -1) {
 			return;
@@ -385,7 +441,7 @@ public class Game {
 		}
 
 		sittingSubs[index] = null;
-		db.buyout(player.getName());
+		subscriber.updateBankroll(db.buyout(player.getName()));
 		final Player clone = player.publicClone(false);
 		for (Subscriber s : subscribers) {
 			s.removePlayer(clone);
@@ -394,7 +450,7 @@ public class Game {
 
 	}
 
-	public boolean setAway(Subscriber subscriber, boolean away) {
+	public synchronized boolean setAway(Subscriber subscriber, boolean away) {
 		int index = players.indexOf(subscriber.getName());
 		if (index != -1) {
 			Player player = players.get(index);

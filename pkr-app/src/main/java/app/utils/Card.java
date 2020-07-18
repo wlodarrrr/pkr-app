@@ -47,7 +47,11 @@ public class Card {
 	}
 
 	public Image getImage() {
-		return new Image("images/" + toShortString() + ".png", "");
+		String shortString = toShortString();
+		if (shortString.contentEquals("AD")) {
+			shortString = "asdzwonek";
+		}
+		return new Image("images/" + shortString + ".png", "");
 	}
 
 	public int getRank() {
@@ -65,7 +69,8 @@ public class Card {
 
 	public String toShortString() {
 		if (suit == -1) {
-			return "facedown";
+			// int i = new Random().nextInt(5) + 1;
+			return "facedown" + 5;
 		} else {
 			return Card.shortRanks[rank] + Card.shortSuits[suit];
 		}

@@ -1,0 +1,1 @@
+alter table debt alter column date type date;

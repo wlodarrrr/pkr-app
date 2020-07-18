@@ -188,6 +188,7 @@ public class Players {
 					return p;
 				}
 			}
+			counter++;
 		}
 		actorPos = -1;
 		return null;
@@ -205,6 +206,7 @@ public class Players {
 					return p;
 				}
 			}
+			counter++;
 		}
 		actorPos = -1;
 		return null;

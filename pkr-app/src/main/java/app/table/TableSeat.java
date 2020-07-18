@@ -59,7 +59,7 @@ public class TableSeat extends AbsoluteLayout {
 
 	}
 
-	public void setCards(Card[] cards) {
+	public void setCards(final Card[] cards) {
 		if (cards == null) {
 			removeAll();
 			add(lName, 101, 0);

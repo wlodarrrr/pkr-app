@@ -18,9 +18,15 @@ public interface Subscriber {
 
 	void updateHoleCards(Card[] cards);
 
+	void updateBankroll(double amount);
+
 	void toAct(Player publicClone, double toCall, double totalPot);
 
 	void removePlayer(Player player);
 
 	void doShowdown(Set<Player> playersToShow, Card[] clone);
+
+	void updateTimer(int timerCounter);
+
+	void acceptSeat(int index);
 }

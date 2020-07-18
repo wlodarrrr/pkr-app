@@ -54,7 +54,7 @@ public class TableActions extends VerticalLayout {
 		});
 
 		// make it beautiful
-		final int width = 530;
+		final int width = 600;
 		fold.setWidth(width / 4 + "px");
 		call.setWidth(width / 4 + "px");
 		raise.setWidth(width / 4 + "px");
@@ -65,10 +65,11 @@ public class TableActions extends VerticalLayout {
 		xpot.setWidth(width / 5 + "px");
 		xallin.setWidth(width / 5 + "px");
 
-		x12.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
-		x23.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
-		x34.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
-		xpot.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
+		x12.addThemeVariants(ButtonVariant.LUMO_CONTRAST, ButtonVariant.LUMO_SMALL);
+		x23.addThemeVariants(ButtonVariant.LUMO_CONTRAST, ButtonVariant.LUMO_SMALL);
+		x34.addThemeVariants(ButtonVariant.LUMO_CONTRAST, ButtonVariant.LUMO_SMALL);
+		xpot.addThemeVariants(ButtonVariant.LUMO_CONTRAST, ButtonVariant.LUMO_SMALL);
+		xallin.addThemeVariants(ButtonVariant.LUMO_CONTRAST, ButtonVariant.LUMO_SMALL);
 		fold.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
 		call.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 		raise.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SUCCESS);
@@ -79,6 +80,8 @@ public class TableActions extends VerticalLayout {
 		HorizontalLayout hl2 = new HorizontalLayout(fold, call, raise, raiseSize);
 		hl2.setSpacing(false);
 		add(hl, hl2);
+		setSpacing(false);
+		setPadding(false);
 
 		// turn off at start
 		setVisible(false);

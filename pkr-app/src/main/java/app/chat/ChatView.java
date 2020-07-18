@@ -11,13 +11,11 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.page.Push;
 import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.router.Route;
 import com.vaadin.flow.shared.Registration;
 
 import app.chat.Message.Type;
 import app.utils.TextConstants;
 
-@Route
 @Push
 @CssImport("./styles/shared-styles.css")
 @CssImport(value = "./styles/vaadin-text-field-styles.css", themeFor = "vaadin-text-field")
@@ -27,15 +25,17 @@ public class ChatView extends VerticalLayout {
 	private TextField chatBox;
 	private Button chatSend;
 	private Registration chatterRegistration;
+	private String name;
 
 	public ChatView(String name) {
+		this.name = name;
 		createGUI();
-		chatSend.addClickListener(e -> send(name));
-		chatBox.addKeyUpListener(Key.ENTER, e -> send(name));
+		chatSend.addClickListener(e -> send());
+		chatBox.addKeyUpListener(Key.ENTER, e -> send());
 
 	}
 
-	private void send(String name) {
+	private void send() {
 		if (chatBox.getValue().length() > 0) {
 			Chatter.send(new Message(name, chatBox.getValue(), Message.Type.MSG));
 			chatBox.setValue("");
@@ -71,14 +71,14 @@ public class ChatView extends VerticalLayout {
 		chatArea = new VerticalLayout();
 		chatArea.setId("chatArea");
 		chatArea.setSizeFull();
-		chatArea.setMaxHeight("340px");
+		chatArea.setMaxHeight("350px");
 		chatArea.setSpacing(false);
 		chatArea.getStyle().set("overflow-y", "auto");
 
 		add(chatArea, hl1);
 		setAlignItems(Alignment.START);
-		setWidth("400px");
-		setHeight("400px");
+		setWidth("350px");
+		setHeight("380px");
 		setPadding(false);
 		addClassNames("box");
 	}
@@ -89,10 +89,12 @@ public class ChatView extends VerticalLayout {
 		chatterRegistration = Chatter.register((message) -> {
 			ui.access(() -> receive(message));
 		});
+		Chatter.send(new Message("", name + " " + TextConstants.JOINED + ".", Type.SYSTEM));
 	}
 
 	@Override
 	protected void onDetach(DetachEvent detachEvent) {
+		Chatter.send(new Message("", name + " " + TextConstants.LEFT + ".", Type.SYSTEM));
 		chatterRegistration.remove();
 		chatterRegistration = null;
 	}

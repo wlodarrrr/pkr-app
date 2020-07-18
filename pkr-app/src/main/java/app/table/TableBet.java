@@ -13,7 +13,6 @@ public class TableBet extends HorizontalLayout {
 		addClassName("bets");
 		setWidth("140px");
 		setHeight("25px");
-		setJustifyContentMode(JustifyContentMode.CENTER);
 
 		lBet = new Span("");
 	}

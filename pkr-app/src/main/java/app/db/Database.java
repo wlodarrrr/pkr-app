@@ -1,10 +1,11 @@
 package app.db;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import com.vaadin.flow.component.login.AbstractLogin.LoginEvent;
@@ -13,48 +14,101 @@ import com.vaadin.flow.component.login.AbstractLogin.LoginEvent;
 public class Database {
 
 	@Autowired
-	private JdbcTemplate jdbcTemplate;
-
-	List<User> findAll() {
-		return jdbcTemplate.query("select name,pass,cash,buyin from bankroll;", (rs, rowNum) -> {
-			return new User(rs.getString("name"), rs.getString("pass"), rs.getDouble("cash"), rs.getDouble("buyin"));
-		});
-	}
+	private UserRepository userRepository;
 
 	public boolean authenticate(LoginEvent e) {
-		return e.getPassword().length() > 2;
 
+		try {
+			User user = userRepository.findById(e.getUsername()).get();
+			if (user.getPass() == null) {
+				user.setPass(e.getPassword());
+				userRepository.save(user);
+				return true;
+			} else {
+				return user.getName().contentEquals(e.getUsername()) && user.getPass().contentEquals(e.getPassword());
+			}
+		} catch (NoSuchElementException ex) {
+			return false;
+		}
 	}
 
-	public void buyout(String name) {
-		jdbcTemplate.update("update bankroll set cash = cash + buyin,buyin=0 where name = ?", name);
-
+	public double buyout(String name) {
+		try {
+			User user = userRepository.findById(name).get();
+			user.setCash(user.getCash() + user.getBuyin());
+			user.setBuyin(0);
+			userRepository.save(user);
+			return user.getCash();
+		} catch (NoSuchElementException ex) {
+			return 0;
+		}
 	}
 
 	public double buyin(String name, double buyin) {
-		jdbcTemplate.update("update bankroll set cash = cash-?,buyin = ?;", new Object[] { buyin, buyin });
-		List<Double> cash = jdbcTemplate.query("select cash from bankroll where name = ?;", new Object[] { name },
-				(rs, rowNum) -> {
-					return rs.getDouble("cash");
-				});
-		if (cash.size() > 0) {
-			return cash.get(0);
-		} else {
+		try {
+			User user = userRepository.findById(name).get();
+			user.setCash(user.getCash() - buyin);
+			user.setBuyin(buyin);
+			userRepository.save(user);
+			return user.getCash();
+		} catch (NoSuchElementException ex) {
 			return 0;
 		}
-
 	}
 
-	public void updateBuyin(String name, double cash) {
-		jdbcTemplate.update("update bankroll set buyin = ? where name = ?", new Object[] { cash, name });
-
+	public void updateBuyin(String name, double buyin) {
+		try {
+			User user = userRepository.findById(name).get();
+			user.setBuyin(buyin);
+			userRepository.save(user);
+		} catch (NoSuchElementException e) {
+		}
 	}
 
 	public void massUpdateBuyin(Map<String, Double> buyins) {
 		for (String name : buyins.keySet()) {
-			jdbcTemplate.update("update bankroll set buyin = ? where name = ?",
-					new Object[] { buyins.get(name), name });
+			updateBuyin(name, buyins.get(name));
 		}
 
 	}
+
+	public List<User> findAll() {
+		List<User> users = new ArrayList<User>();
+		Iterable<User> result = userRepository.findAll();
+		result.forEach(users::add);
+		return users;
+	}
+
+	public User add(String name) {
+		try {
+			User user = userRepository.findById(name).get();
+			return user;
+		} catch (NoSuchElementException e) {
+			User user = new User(name, null, 0, 0);
+			userRepository.save(user);
+			return user;
+		}
+	}
+
+	public boolean resetPass(String name) {
+		try {
+			User user = userRepository.findById(name).get();
+			user.setPass(null);
+			userRepository.save(user);
+			return true;
+		} catch (NoSuchElementException e) {
+			return false;
+		}
+	}
+
+	public boolean remove(String name) {
+		try {
+			User user = userRepository.findById(name).get();
+			userRepository.delete(user);
+			return true;
+		} catch (NoSuchElementException e) {
+			return false;
+		}
+	}
+
 }

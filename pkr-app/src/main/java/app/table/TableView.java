@@ -8,13 +8,17 @@ import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.checkbox.Checkbox;
+import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 
+import app.chat.ChatView;
 import app.game.Game;
 import app.game.Player;
 import app.game.Subscriber;
 import app.utils.AbsoluteLayout;
+import app.utils.AudioPlayer;
 import app.utils.Card;
 import app.utils.TextConstants;
 
@@ -34,10 +38,16 @@ public class TableView extends AbsoluteLayout implements Subscriber {
 	private Game game;
 	private UI ui;
 	private String name;
+	private TextField tfBankroll;
+	private Span timer;
+	private AudioPlayer chipsSound;
+	private AudioPlayer turnSound;
+	private AudioPlayer timerSound;
 
 	public TableView(@Autowired Game game, String name) {
 		this.game = game;
 		this.name = name;
+		addClassNames("bg");
 		createGUI();
 
 		cbAway.addValueChangeListener(e -> game.setAway(this, e.getValue()));
@@ -72,70 +82,225 @@ public class TableView extends AbsoluteLayout implements Subscriber {
 	}
 
 	private void createGUI() {
+		setWidth("1280px");
+		setHeight("720px");
+		addClassNames("table");
 		for (int i = 0; i < TableView.size; i++) {
 			seats[i] = new TableSeat(this);
 			bets[i] = new TableBet();
 
 		}
-		add(seats[0], 0, 440);
-		add(bets[0], 160, 440);
-		add(seats[1], 0, 630);
-		add(bets[1], 160, 630);
-		add(seats[2], 100, 800);
-		add(bets[2], 260, 800);
-		add(seats[3], 275, 970);
-		add(bets[3], 338, 830);
+		add(seats[0], -20, 270);
+		add(bets[0], 140, 270);
+		bets[0].setJustifyContentMode(JustifyContentMode.CENTER);
+		add(seats[1], -20, 430);
+		add(bets[1], 140, 430);
+		bets[1].setJustifyContentMode(JustifyContentMode.CENTER);
 
-		add(seats[4], 450, 800);
-		add(bets[4], 420, 800);
-		add(seats[5], 550, 630);
-		add(bets[5], 520, 630);
+		add(seats[2], 30, 590);
+		add(bets[2], 190, 590);
+		bets[2].setJustifyContentMode(JustifyContentMode.START);
 
-		add(seats[6], 550, 440);
-		add(bets[6], 520, 440);
-		add(seats[7], 450, 270);
-		add(bets[7], 420, 270);
-		add(seats[8], 275, 100);
-		add(bets[8], 333, 240);
-		add(seats[9], 100, 270);
-		add(bets[9], 260, 270);
+		add(seats[3], 200, 700);
+		add(bets[3], 260, 550);
+		bets[3].setJustifyContentMode(JustifyContentMode.END);
+
+		add(seats[4], 370, 590);
+		add(bets[4], 340, 590);
+		bets[4].setJustifyContentMode(JustifyContentMode.START);
+
+		add(seats[5], 420, 430);
+		add(bets[5], 390, 430);
+		bets[5].setJustifyContentMode(JustifyContentMode.CENTER);
+		add(seats[6], 420, 270);
+		add(bets[6], 390, 270);
+		bets[6].setJustifyContentMode(JustifyContentMode.CENTER);
+
+		add(seats[7], 370, 110);
+		add(bets[7], 340, 110);
+		bets[7].setJustifyContentMode(JustifyContentMode.END);
+
+		add(seats[8], 200, 0);
+		add(bets[8], 260, 160);
+		bets[8].setJustifyContentMode(JustifyContentMode.START);
+
+		add(seats[9], 30, 110);
+		add(bets[9], 190, 110);
+		bets[9].setJustifyContentMode(JustifyContentMode.END);
 
 		pot = new TableBet();
-		add(pot, 400, 535);
+		add(pot, 190, 350);
 
 		board = new TableBoard();
-		add(board, 280, 430);
+		add(board, 220, 245);
 
 		actions = new TableActions(game, this);
-		add(actions, 750, 440);
+		add(actions, 620, 150);
 
+		tfBankroll = new TextField(TextConstants.BANKROLL);
+		tfBankroll.setEnabled(false);
+		tfBankroll.setSizeFull();
 		tfBuyIn = new TextField(TextConstants.BUY_IN);
+		tfBuyIn.setSizeFull();
 		cbAway = new Checkbox(TextConstants.AWAY, false);
 		cbAway.setVisible(false);
 
 		bStandUp = new Button(TextConstants.STAND_UP);
 		bStandUp.setVisible(false);
 
-		final VerticalLayout vl = new VerticalLayout(tfBuyIn, cbAway, bStandUp);
+		final VerticalLayout vl = new VerticalLayout(tfBankroll, tfBuyIn, cbAway, bStandUp);
 		vl.setWidth("200px");
-		vl.setHeight("100px");
+		vl.setHeight("200px");
+		vl.addClassNames("box");
+		add(vl, -20, 1000);
+
+		timer = new Span(" ");
+		timer.addClassName("bigfont");
+		Button bTimer = new Button("Call clock", e -> game.callClock());
+		final VerticalLayout vl2 = new VerticalLayout(timer, bTimer);
+		vl2.setWidth("140px");
+		vl2.setHeight("200px");
+		vl2.addClassNames("box");
+		add(vl2, -20, 850);
+
+		ChatView cv = new ChatView(name);
+		add(cv, 190, 850);
+
+		Button fill = new Button("Fill", e -> fill());
+		add(fill, 0, 1300);
+
+		Button sound = new Button("Fill", e -> chipsSound.play());
+		add(sound, 0, 1400);
+
+		chipsSound = new AudioPlayer();
+		chipsSound.setSource("chips.mp3");
+		add(chipsSound);
+
+		turnSound = new AudioPlayer();
+		turnSound.setSource("turn.mp3");
+		add(turnSound);
+
+		timerSound = new AudioPlayer();
+		timerSound.setSource("timer.mp3");
+		add(timerSound);
+	}
+
+	private void createGUIbackup() {
+		for (int i = 0; i < TableView.size; i++) {
+			seats[i] = new TableSeat(this);
+			bets[i] = new TableBet();
+
+		}
+		add(seats[0], 0, 320);
+		add(bets[0], 160, 320);
+		bets[0].setJustifyContentMode(JustifyContentMode.CENTER);
+		add(seats[1], 0, 480);
+		add(bets[1], 160, 480);
+		bets[1].setJustifyContentMode(JustifyContentMode.CENTER);
+		add(seats[2], 0, 640);
+		add(bets[2], 160, 640);
+		bets[2].setJustifyContentMode(JustifyContentMode.CENTER);
+
+		add(seats[3], 50, 800);
+		add(bets[3], 210, 800);
+		bets[3].setJustifyContentMode(JustifyContentMode.START);
+
+		add(seats[4], 220, 910);
+		add(bets[4], 290, 760);
+		bets[4].setJustifyContentMode(JustifyContentMode.END);
+
+		add(seats[5], 390, 800);
+		add(bets[5], 360, 800);
+		bets[5].setJustifyContentMode(JustifyContentMode.START);
+
+		add(seats[6], 440, 640);
+		add(bets[6], 415, 640);
+		bets[6].setJustifyContentMode(JustifyContentMode.CENTER);
+		add(seats[7], 440, 480);
+		add(bets[7], 415, 480);
+		bets[7].setJustifyContentMode(JustifyContentMode.CENTER);
+
+		add(seats[8], 220, 50);
+		add(bets[8], 290, 210);
+		bets[8].setJustifyContentMode(JustifyContentMode.START);
+
+		add(seats[9], 50, 160);
+		add(bets[9], 210, 160);
+		bets[9].setJustifyContentMode(JustifyContentMode.END);
+
+		pot = new TableBet();
+		add(pot, 250, 470);
+
+		board = new TableBoard();
+		add(board, 280, 365);
+
+		actions = new TableActions(game, this);
+		add(actions, 630, 500);
+
+		tfBankroll = new TextField(TextConstants.BANKROLL);
+		tfBankroll.setEnabled(false);
+		tfBankroll.setSizeFull();
+		tfBuyIn = new TextField(TextConstants.BUY_IN);
+		tfBuyIn.setSizeFull();
+		cbAway = new Checkbox(TextConstants.AWAY, false);
+		cbAway.setVisible(false);
+
+		bStandUp = new Button(TextConstants.STAND_UP);
+		bStandUp.setVisible(false);
+
+		final VerticalLayout vl = new VerticalLayout(tfBankroll, tfBuyIn, cbAway, bStandUp);
+		vl.setWidth("140px");
+		vl.setHeight("200px");
 		vl.addClassNames("box");
 		add(vl, 0, 0);
+
+		timer = new Span(" ");
+		timer.addClassName("bigfont");
+		Button bTimer = new Button("Call clock", e -> game.callClock());
+		final VerticalLayout vl2 = new VerticalLayout(timer, bTimer);
+		vl2.setWidth("140px");
+		vl2.setHeight("200px");
+		vl2.addClassNames("box");
+		add(vl2, 0, 960);
+
+		ChatView cv = new ChatView(name);
+		add(cv, 440, 0);
+
+		// Button fill = new Button("Fill", e -> fill());
+		// add(fill, 0, 1200);
+	}
+
+	private void fill() {
+		for (int i = 0; i < size; i++) {
+			seats[i].setCards(facedownCards);
+			seats[i].setName("player" + i);
+			seats[i].setChips(i);
+			bets[i].update(i * 1.23);
+		}
+
+		board.update(facedownCards);
+
+		actions.setVisible(true);
 	}
 
 	@Override
 	public void toAct(Player player, double toCall, double pot) {
 		ui.access(() -> {
+			chipsSound.play();
+
 			int index = player.getSeat();
 			for (int i = 0; i < size; i++) {
 				seats[i].setActive(i == index);
 			}
 			updatePot(pot);
 			if (index == seat) {
+				turnSound.play();
 				actions.setVisible(true);
 				actions.update(toCall, pot, player.getCash());
+				ui.getPage().setTitle(TextConstants.YOUR_MOVE);
 			} else {
 				actions.setVisible(false);
+				ui.getPage().setTitle("Pkr");
 			}
 
 		});
@@ -167,7 +332,7 @@ public class TableView extends AbsoluteLayout implements Subscriber {
 	}
 
 	@Override
-	public void updateHoleCards(Card[] cards) {
+	public void updateHoleCards(final Card[] cards) {
 		if (seat != -1) {
 			ui.access(() -> {
 				seats[seat].setCards(cards);
@@ -187,6 +352,9 @@ public class TableView extends AbsoluteLayout implements Subscriber {
 			bets[index].update(player.getBet());
 
 			if (player.hasCards()) {
+				if (player.getCash() == 0) {
+					seats[index].setAllIn();
+				}
 				if (this.seat != index) {
 					seats[index].setCards(facedownCards);
 				}
@@ -194,6 +362,11 @@ public class TableView extends AbsoluteLayout implements Subscriber {
 				seats[index].setCards(null);
 			}
 		});
+	}
+
+	@Override
+	public void updateBankroll(double amount) {
+		ui.access(() -> tfBankroll.setValue(Double.toString(((double) Math.round(amount * 100)) / 100)));
 	}
 
 	@Override
@@ -219,6 +392,7 @@ public class TableView extends AbsoluteLayout implements Subscriber {
 			actions.setVisible(false);
 			updatePot(0);
 			updateBoard(board);
+			timer.setText("");
 			for (Player player : playersToShow) {
 				final int seat = player.getSeat();
 				seats[seat].setName(player.getName());
@@ -252,5 +426,26 @@ public class TableView extends AbsoluteLayout implements Subscriber {
 	@Override
 	public String getName() {
 		return name;
+	}
+
+	@Override
+	public void updateTimer(int timerCounter) {
+		ui.access(() -> {
+			if (timerCounter <= 0) {
+				timer.setText("");
+				ui.getPage().setTitle("Pkr");
+			} else {
+				timer.setText(timerCounter + "");
+				ui.getPage().setTitle(TextConstants.TIMER + ": " + timerCounter);
+				if (timerCounter == 14) {
+					timerSound.play();
+				}
+			}
+		});
+	}
+
+	@Override
+	public void acceptSeat(int index) {
+		seat = index;
 	}
 }

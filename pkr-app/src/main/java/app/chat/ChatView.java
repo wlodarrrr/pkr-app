@@ -1,5 +1,7 @@
 package app.chat;
 
+import org.springframework.security.core.context.SecurityContextHolder;
+
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.DetachEvent;
 import com.vaadin.flow.component.Key;
@@ -25,10 +27,8 @@ public class ChatView extends VerticalLayout {
 	private TextField chatBox;
 	private Button chatSend;
 	private Registration chatterRegistration;
-	private String name;
 
-	public ChatView(String name) {
-		this.name = name;
+	public ChatView() {
 		createGUI();
 		chatSend.addClickListener(e -> send());
 		chatBox.addKeyUpListener(Key.ENTER, e -> send());
@@ -37,6 +37,7 @@ public class ChatView extends VerticalLayout {
 
 	private void send() {
 		if (chatBox.getValue().length() > 0) {
+			String name = SecurityContextHolder.getContext().getAuthentication().getName();
 			Chatter.send(new Message(name, chatBox.getValue(), Message.Type.MSG));
 			chatBox.setValue("");
 		}
@@ -89,11 +90,14 @@ public class ChatView extends VerticalLayout {
 		chatterRegistration = Chatter.register((message) -> {
 			ui.access(() -> receive(message));
 		});
+		String name = SecurityContextHolder.getContext().getAuthentication().getName();
 		Chatter.send(new Message("", name + " " + TextConstants.JOINED + ".", Type.SYSTEM));
 	}
 
 	@Override
 	protected void onDetach(DetachEvent detachEvent) {
+
+		String name = SecurityContextHolder.getContext().getAuthentication().getName();
 		Chatter.send(new Message("", name + " " + TextConstants.LEFT + ".", Type.SYSTEM));
 		chatterRegistration.remove();
 		chatterRegistration = null;

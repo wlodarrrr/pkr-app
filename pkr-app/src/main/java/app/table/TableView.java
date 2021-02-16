@@ -3,6 +3,7 @@ package app.table;
 import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.UI;
@@ -37,16 +38,14 @@ public class TableView extends AbsoluteLayout implements Subscriber {
 	private Checkbox cbAway;
 	private Game game;
 	private UI ui;
-	private String name;
 	private TextField tfBankroll;
 	private Span timer;
 	private AudioPlayer chipsSound;
 	private AudioPlayer turnSound;
 	private AudioPlayer timerSound;
 
-	public TableView(@Autowired Game game, String name) {
+	public TableView(@Autowired Game game) {
 		this.game = game;
-		this.name = name;
 		addClassNames("bg");
 		createGUI();
 
@@ -163,7 +162,7 @@ public class TableView extends AbsoluteLayout implements Subscriber {
 		vl2.addClassNames("box");
 		add(vl2, -20, 850);
 
-		ChatView cv = new ChatView(name);
+		ChatView cv = new ChatView();
 		add(cv, 190, 850);
 
 		Button fill = new Button("Fill", e -> fill());
@@ -263,7 +262,7 @@ public class TableView extends AbsoluteLayout implements Subscriber {
 		vl2.addClassNames("box");
 		add(vl2, 0, 960);
 
-		ChatView cv = new ChatView(name);
+		ChatView cv = new ChatView();
 		add(cv, 440, 0);
 
 		// Button fill = new Button("Fill", e -> fill());
@@ -425,7 +424,7 @@ public class TableView extends AbsoluteLayout implements Subscriber {
 
 	@Override
 	public String getName() {
-		return name;
+		return SecurityContextHolder.getContext().getAuthentication().getName();
 	}
 
 	@Override

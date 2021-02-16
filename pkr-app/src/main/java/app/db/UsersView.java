@@ -26,99 +26,54 @@ public class UsersView extends VerticalLayout {
 
 	private TextField tfUsername;
 	private Grid<User> grid;
-	private Database db;
 	private DebtRepository debtRepository;
-	private UserRepository userRepository;
+	private UserService userService;
 
-	public UsersView(@Autowired Database db, @Autowired DebtRepository debtRepository,
-			@Autowired UserRepository userRepository) {
-		this.db = db;
+	public UsersView(@Autowired DebtRepository debtRepository, @Autowired UserService userService) {
+		this.userService = userService;
 		this.debtRepository = debtRepository;
-		this.userRepository = userRepository;
 		grid = new Grid<>(User.class);
 		grid.addClassName("table");
 		grid.setColumns("name", "cash", "buyin");
 		grid.setSelectionMode(SelectionMode.MULTI);
-		grid.setItems(db.findAll());
+		grid.setItems(userService.findAll());
 		add(grid);
 
 		tfUsername = new TextField("Username");
 		Button bNewUser = new Button("Create user", new Icon(VaadinIcon.PLUS), e -> {
-			db.add(tfUsername.getValue());
-			grid.setItems(db.findAll());
+
+			grid.setItems(userService.findAll());
 		});
 		bNewUser.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
-		Button bResetPass = new Button("Reset pass", new Icon(VaadinIcon.REFRESH), e -> reset());
-		bResetPass.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-
-		Button bDelete = new Button("Remove user", new Icon(VaadinIcon.MINUS), e -> remove());
+		Button bDelete = new Button("Remove user", new Icon(VaadinIcon.MINUS), e -> delteUser());
 		bDelete.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
-		Button bOrganize = new Button("Organize", new Icon(VaadinIcon.SCALE), e -> organize());
+		Button bOrganize = new Button("Organize", new Icon(VaadinIcon.SCALE), e -> organizeDebts());
 		bOrganize.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
-		HorizontalLayout hl = new HorizontalLayout(tfUsername, bNewUser, bResetPass, bDelete, bOrganize);
+		HorizontalLayout hl = new HorizontalLayout(tfUsername, bNewUser, bDelete, bOrganize);
 		hl.setSizeFull();
 		hl.setAlignItems(Alignment.END);
 		add(hl);
 	}
 
-	private void reset() {
+	private void delteUser() {
 		Set<User> selection = grid.getSelectedItems();
 		for (User user : selection) {
-			boolean success = db.resetPass(user.getName());
-			if (success) {
-				Notification.show("Password of " + user.getName() + " has been reset.");
-			}
+			userService.delete(user);
+			grid.setItems(userService.findAll());
+			Notification.show(user.getName() + " has been deleted.");
 		}
 	}
 
-	private void remove() {
-		Set<User> selection = grid.getSelectedItems();
-		for (User user : selection) {
-			boolean success = db.remove(user.getName());
-			if (success) {
-				grid.setItems(db.findAll());
-				Notification.show(user.getName() + " has been deleted.");
-			}
-		}
-	}
+	private void organizeDebts() {
 
-	private void organize() {
-		Set<User> selection = grid.getSelectedItems();
-		List<User> sel = new ArrayList<User>();
-		sel.addAll(selection);
-		while (sel.size() > 1) {
-			User minUser = null;
-			User maxUser = null;
-			double min = 0;
-			double max = 0;
-			for (User u : sel) {
-				min = Math.min(min, u.getCash());
-				if (min == u.getCash()) {
-					minUser = u;
-				}
-				max = Math.max(max, u.getCash());
-				if (max == u.getCash()) {
-					maxUser = u;
-				}
-			}
-			double debt = Math.min(max, -min);
-			Debt d = new Debt(maxUser.getName(), minUser.getName(), debt, LocalDate.now());
-			minUser.setCash(minUser.getCash() + debt);
-			maxUser.setCash(maxUser.getCash() - debt);
-			if (minUser.getCash() == 0) {
-				sel.remove(minUser);
-			}
-			if (maxUser.getCash() == 0) {
-				sel.remove(maxUser);
-			}
-			debtRepository.save(d);
-			userRepository.save(minUser);
-			userRepository.save(maxUser);
-			Notification.show(minUser.getName() + " -> " + maxUser.getName() + " : " + debt + ".");
+		List<Debt> debts = userService.organize(grid.getSelectedItems());
+		for (Debt debt : debts) {
+			Notification.show(debt.getDebtor() + " -> " + debt.getCreditor() + " : " + debt.getAmount() + ".");
 		}
-		grid.setItems(db.findAll());
+		debtRepository.saveAll(debts);
+		grid.setItems(userService.findAll());
 	}
 }

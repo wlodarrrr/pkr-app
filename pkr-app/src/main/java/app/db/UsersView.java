@@ -1,7 +1,5 @@
 package app.db;
 
-import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -46,7 +44,7 @@ public class UsersView extends VerticalLayout {
 		});
 		bNewUser.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
-		Button bDelete = new Button("Remove user", new Icon(VaadinIcon.MINUS), e -> delteUser());
+		Button bDelete = new Button("Remove user", new Icon(VaadinIcon.MINUS), e -> deleteUser());
 		bDelete.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
 		Button bOrganize = new Button("Organize", new Icon(VaadinIcon.SCALE), e -> organizeDebts());
@@ -58,7 +56,7 @@ public class UsersView extends VerticalLayout {
 		add(hl);
 	}
 
-	private void delteUser() {
+	private void deleteUser() {
 		Set<User> selection = grid.getSelectedItems();
 		for (User user : selection) {
 			userService.delete(user);
